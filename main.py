@@ -5,16 +5,15 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from collections import defaultdict
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev")
-
+# app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev")
 CORS(app, origins=["*"])
 
 socketio = SocketIO(
     app, 
     cors_allowed_origins="*",
-    async_mode='threading', 
-    ping_timeout=60,        
-    ping_interval=25         
+    async_mode='threading',
+    ping_timeout=60,
+    ping_interval=25
 )
 
 users_by_sid = {}
@@ -81,7 +80,8 @@ def switch(data):
     
     join_room(new_room)
     users_by_sid[request.sid]["room"] = new_room
-    room_members[new_room].append({"nick": nick, "pfp": "default_pfp_url"})
+    user_pfp = next((u["pfp"] for u in room_members[cur_room] if u["nick"] == nick), "https://raw.githubusercontent.com/iFreaku/keepbooks/refs/heads/main/static/avatar/1.png")
+    room_members[new_room].append({"nick": nick, "pfp": user_pfp})
     emit("joined", {"nick": nick, "room": new_room}, broadcast=True)
     update_presence(new_room)
 
@@ -125,5 +125,5 @@ if __name__ == "__main__":
         host="0.0.0.0", 
         port=port, 
         debug=debug,
-        allow_unsafe_werkzeug=True
+        use_reloader=False
     )
