@@ -10,8 +10,8 @@ let isConnected = false;
 let typingTimeout = null;
 
 
-function getSocketIOServerUrl(port = 10000) {
-    return `${window.location.protocol}//${window.location.hostname}:${port}`;
+function getSocketIOServerUrl() {
+    return `${window.location.protocol}//${window.location.hostname}`;
 }
 
 function connectToSocketIO(nick, pfp, room = 'general') {
@@ -404,6 +404,7 @@ function displayMsg(nick, pfp, msg) {
     const chatList = document.getElementById('chatlist');
     chatList.appendChild(chatContainer);
 }
+
 
 
 
