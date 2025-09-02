@@ -453,4 +453,10 @@ body {
     .setup-container {
         width: 70vw;
     }
+
+    .container {
+        border: none;
+        width: 90vw;
+        height: 90vh;
+    }
 }
