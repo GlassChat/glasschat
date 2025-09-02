@@ -11,12 +11,28 @@ let typingTimeout = null;
 
 
 function getSocketIOServerUrl() {
-    return `${window.location.protocol}//${window.location.hostname}`;
+    if (window.location.hostname.includes('onrender.com')) {
+        return `${window.location.protocol}//${window.location.hostname}`;
+    }
+    return `${window.location.protocol}//${window.location.hostname}:${window.location.port || '5000'}`;
 }
 
 function connectToSocketIO(nick, pfp, room = 'general') {
+    if (socket && socket.connected) {
+        socket.disconnect();
+    }
+    
     const serverUrl = getSocketIOServerUrl();
-    socket = io(serverUrl);
+    console.log('Connecting to:', serverUrl);
+    
+    socket = io(serverUrl, {
+        transports: ['websocket', 'polling'],
+        timeout: 20000,         
+        reconnection: true,       
+        reconnectionDelay: 1000,  
+        reconnectionAttempts: 5,
+        maxReconnectionAttempts: 5
+    });
 
     socket.on('connect', () => {
         isConnected = true;
@@ -24,9 +40,13 @@ function connectToSocketIO(nick, pfp, room = 'general') {
         socket.emit('join', { nick, pfp, room });
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
         isConnected = false;
-        console.log('Disconnected!');
+        console.log('❌ Disconnected:', reason);
+        
+        if (reason === 'io server disconnect') {
+            socket.connect();
+        }
     });
 
     socket.on('joined', (data) => {
@@ -336,11 +356,48 @@ document.getElementById('input-box').addEventListener('input', () => {
 });
 
 document.getElementById('input-box').addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter') {
         event.preventDefault();
-        socket.emit('msg', { txt: event.target.value, room: getData("active_room", "general"), nick: getData("nick"), pfp: getData("pfp") });
+        const message = event.target.value.trim();
+        
+        if (message && socket && isConnected) {
+            socket.emit('msg', { 
+                txt: message, 
+                room: getData("active_room", "general"), 
+                nick: getData("nick"), 
+                pfp: getData("pfp") 
+            });
+            event.target.value = '';
+        } else if (!isConnected) {
+            console.warn('⚠️ Not connected, trying to reconnect...');
+            const nick = getData("nick");
+            const pfp = getData("pfp");
+            if (nick) {
+                connectToSocketIO(nick, pfp, getData("active_room", "general"));
+            }
+        }
     }
 });
+function sendMsg() {
+    const inputBox = document.getElementById('input-box');
+    const message = inputBox.value.trim();
+    if (message && socket && isConnected) {
+        socket.emit('msg', { 
+            txt: message, 
+            room: getData("active_room", "general"), 
+            nick: getData("nick"), 
+            pfp: getData("pfp") 
+        });
+        inputBox.value = '';
+    } else if (!isConnected) {
+        console.warn('⚠️ Not connected, trying to reconnect...');
+        const nick = getData("nick");
+        const pfp = getData("pfp");
+        if (nick) {
+            connectToSocketIO(nick, pfp, getData("active_room", "general"));
+        }
+    }
+}
 // ----------------------------------------
 
 
@@ -404,6 +461,7 @@ function displayMsg(nick, pfp, msg) {
     const chatList = document.getElementById('chatlist');
     chatList.appendChild(chatContainer);
 }
+
 
 
 
