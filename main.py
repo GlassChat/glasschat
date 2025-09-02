@@ -5,7 +5,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from collections import defaultdict
 
 app = Flask(__name__)
-# app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev")
 CORS(app, origins=["*"])
 
 socketio = SocketIO(
