@@ -1,14 +1,28 @@
+import os
 from flask import Flask, render_template, request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from collections import defaultdict
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "dev"
-CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev")
+
+CORS(app, origins=["*"])
+
+socketio = SocketIO(
+    app, 
+    cors_allowed_origins="*",
+    async_mode='threading', 
+    ping_timeout=60,        
+    ping_interval=25         
+)
+
 users_by_sid = {}
 room_members = defaultdict(list)
+
+@app.route('/health')
+def health_check():
+    return {'status': 'healthy'}, 200
 
 def get_unique_nick(nick, room):
     base, i = nick, 1
@@ -25,8 +39,6 @@ def update_presence(room):
     users = [{"nick": user["nick"], "pfp": user.get("pfp")} for user in room_members[room]]
     emit("updateUserList", users, broadcast=True)
 
-
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -36,6 +48,7 @@ def join(data):
     nick = str(data.get("nick") or "Guest").strip()
     room = str(data.get("room") or "general").strip()
     pfp = str(data.get("pfp") or "https://raw.githubusercontent.com/iFreaku/keepbooks/refs/heads/main/static/avatar/1.png").strip()
+    
     prev = users_by_sid.get(request.sid)
     if prev:
         prev_room = prev["room"]
@@ -43,6 +56,7 @@ def join(data):
         room_members[prev_room] = [user for user in room_members[prev_room] if user["nick"] != prev["nick"]]
         emit("left", {"nick": prev["nick"]}, room=prev_room, include_self=False, broadcast=True)
         update_presence(prev_room)
+    
     nick = get_unique_nick(nick, room)
     join_room(room)
     users_by_sid[request.sid] = {"nick": nick, "room": room}
@@ -59,22 +73,26 @@ def switch(data):
     cur_room = users_by_sid[request.sid]["room"]
     if new_room == cur_room:
         return
+    
     leave_room(cur_room)
-    room_members[cur_room].discard(nick)
+    room_members[cur_room] = [user for user in room_members[cur_room] if user["nick"] != nick]
     emit("left", {"nick": nick}, room=cur_room, include_self=False, broadcast=True)
     update_presence(cur_room)
+    
     join_room(new_room)
     users_by_sid[request.sid]["room"] = new_room
-    room_members[new_room].add(nick)
+    room_members[new_room].append({"nick": nick, "pfp": "default_pfp_url"})
     emit("joined", {"nick": nick, "room": new_room}, broadcast=True)
     update_presence(new_room)
 
 @socketio.on("msg")
 def msg(data):
     user = users_by_sid.get(request.sid)
-    if not user: return
+    if not user: 
+        return
     t = (data.get("txt") or "").strip()
-    if not t: return
+    if not t: 
+        return
     emit("msg", {"nick": data.get("nick"), "pfp": data.get("pfp"), "msg": t, "room": data.get("room")}, broadcast=True)
 
 @socketio.on("typing")
@@ -98,4 +116,14 @@ def disc():
         update_presence(user["room"])
 
 if __name__ == "__main__":
-    socketio.run(app, port=10000, host="0.0.0.0", debug=False)
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
+    print(f"🚀 Starting server on port {port}")
+    socketio.run(
+        app, 
+        host="0.0.0.0", 
+        port=port, 
+        debug=debug,
+        allow_unsafe_werkzeug=True
+    )
