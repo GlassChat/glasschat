@@ -50,9 +50,12 @@ function connectToSocketIO(nick, pfp, room = 'general') {
     });
 
     socket.on('joined', (data) => {
-        storeData("nick", data.nick);
         console.log('Joined!', data);
         displayMsg('System', 'https://www.shutterstock.com/image-vector/chat-bot-icon-virtual-smart-600nw-2478937555.jpg', `→ ${data.nick} joined the room.`);
+    });
+
+    socket.on('joined-2', (data) => {
+        storeData("nick", data.nick);
     });
 
     socket.on('left', (data) => {

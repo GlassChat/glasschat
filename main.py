@@ -61,6 +61,7 @@ def join(data):
     users_by_sid[request.sid] = {"nick": nick, "room": room}
     room_members[room].append({"nick": nick, "pfp": pfp})
     emit("joined", {"nick": nick, "room": room, "pfp": pfp}, broadcast=True)
+    emit("joined-2", {"nick": nick, "room": room, "pfp": pfp}, broadcast=False)
     update_presence(room)
 
 @socketio.on("switch")
