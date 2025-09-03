@@ -44,9 +44,9 @@ function connectToSocketIO(nick, pfp, room = 'general') {
         isConnected = false;
         console.log('❌ Disconnected:', reason);
         
-        if (reason === 'io server disconnect') {
-            socket.connect();
-        }
+        // if (reason === 'io server disconnect') {
+        //     socket.connect();
+        // }
     });
 
     socket.on('joined', (data) => {
