@@ -11,10 +11,7 @@ let typingTimeout = null;
 
 
 function getSocketIOServerUrl() {
-    if (window.location.hostname.includes('onrender.com')) {
-        return `${window.location.protocol}//${window.location.hostname}`;
-    }
-    return `${window.location.protocol}//${window.location.hostname}:${window.location.port || '5000'}`;
+    return `${window.location.protocol}//${window.location.hostname}`;
 }
 
 function connectToSocketIO(nick, pfp, room = 'general') {
