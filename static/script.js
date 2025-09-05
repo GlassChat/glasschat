@@ -79,6 +79,13 @@ function connectToSocketIO(nick, pfp, room = 'general') {
         chatList.scrollTop = chatList.scrollHeight;
     });
 
+    socket.on('media', (data) => {
+        displayMedia(data.nick, data.pfp, data.msg, data.file);
+        hideTypingIndicator();
+        const chatList = document.getElementById('chatlist');
+        chatList.scrollTop = chatList.scrollHeight;
+    });
+
 }
 
 function disconnectSocketIO() {
@@ -95,6 +102,12 @@ function updateUserList(users) {
   userList.innerHTML = '';
 
   users.forEach((user) => {
+    if (user.nick === getData("nick")) {
+        document.getElementById('current-username').textContent = user.nick;
+        document.getElementById('current-pfp').src = user.pfp;
+        return;
+    }
+
     const userElement = document.createElement('div');
     userElement.className = 'user';
 
@@ -106,12 +119,7 @@ function updateUserList(users) {
 
     const usernameElement = document.createElement('span');
     usernameElement.className = 'username';
-    if (user.nick === getData("nick")) {
-        usernameElement.textContent = user.nick+" (You)";
-    }
-    else {
-        usernameElement.textContent = user.nick;
-    }
+    usernameElement.textContent = user.nick;
     
     userElement.appendChild(usernameElement);
     
@@ -258,12 +266,25 @@ function toggleSetupModal() {
     document.getElementById("setup-username").textContent = getData("nick");
     if(getData("pfp") !== null){
         document.getElementById("setup-pfp").src = getData("pfp");
+        document.getElementById("pfp-box").value = getData("pfp");
     }
     else{
         document.getElementById("setup-pfp").src = "https://raw.githubusercontent.com/iFreaku/keepbooks/refs/heads/main/static/avatar/1.png";
+        document.getElementById("pfp-box").value = "";
+    }
+
+    if(getData("nick") !== null){
+        document.getElementById("nick-box").value = getData("nick");
+    }
+    else{
+        document.getElementById("nick-box").value = "";
     }
 }
 
+function toggleAttachMediaModal() {
+    document.getElementById("blur").classList.toggle("show")
+    document.getElementById("attach-media-modal").classList.toggle("show");
+}
 
 // --------------------------------------------------------------
 
@@ -378,6 +399,55 @@ document.getElementById('input-box').addEventListener('keydown', (event) => {
         }
     }
 });
+
+document.getElementById('attach-media-input').addEventListener('input', (event) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+        const file = files[0];
+        const fileType = file.type.split('/')[0];
+        const reader = new FileReader();
+        if (fileType === 'image') {
+            reader.onload = (event) => {
+                const imageUrl = event.target.result;
+                const imageElement = document.createElement('img');
+                imageElement.className = 'file-preview';
+                imageElement.src = imageUrl;
+                imageElement.alt = file.name;
+                document.getElementById("media-preview").innerHTML = '';
+                document.getElementById("media-preview").appendChild(imageElement);
+            };
+            reader.readAsDataURL(file);
+        } else if (fileType === 'video') {
+            reader.onload = (event) => {
+                const videoUrl = event.target.result;
+                const videoElement = document.createElement('video');
+                videoElement.className = 'file-preview';
+                videoElement.src = videoUrl;
+                videoElement.controls = true;
+                videoElement.alt = file.name;
+                document.getElementById("media-preview").innerHTML = '';
+                document.getElementById("media-preview").appendChild(videoElement);
+            };
+            reader.readAsDataURL(file);
+        } else if (fileType === 'audio') {
+            reader.onload = (event) => {
+                const audioUrl = event.target.result;
+                const audioElement = document.createElement('audio');
+                audioElement.className = 'file-preview';
+                audioElement.src = audioUrl;
+                audioElement.controls = true;
+                audioElement.alt = file.name;
+                document.getElementById("media-preview").innerHTML = '';
+                document.getElementById("media-preview").appendChild(audioElement);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            document.getElementById("media-preview").innerHTML = file.name;
+        }
+    }
+});
+
+
 function sendMsg() {
     const inputBox = document.getElementById('input-box');
     const message = inputBox.value.trim();
@@ -398,6 +468,58 @@ function sendMsg() {
         }
     }
 }
+
+function sendMedia() {
+    const inputBox = document.getElementById('attach-media-box');
+    const fileInput = document.getElementById('attach-media-input');
+    const message = inputBox.value.trim();
+    const files = fileInput.files;
+    if (message || files.length > 0) {
+        const file = files[0];
+        const fileType = file.type.split('/')[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const base64Data = event.target.result;
+            const data = {
+                txt: message, 
+                room: getData("active_room", "general"), 
+                nick: getData("nick"), 
+                pfp: getData("pfp"),
+                file: {
+                    data: base64Data,
+                    name: file.name,
+                    size: formatFileSize(file.size),
+                    type: fileType === 'image' || fileType === 'video' || fileType === 'audio' ? fileType : 'other'
+                }
+            };
+            console.log(data);
+            socket.emit('media', data);
+        };
+        
+        reader.readAsDataURL(file);
+        inputBox.value = '';
+        fileInput.value = '';
+        toggleAttachMediaModal();
+    } else if (!isConnected) {
+        console.warn('⚠️ Not connected, trying to reconnect...');
+        const nick = getData("nick");
+        const pfp = getData("pfp");
+        if (nick) {
+            connectToSocketIO(nick, pfp, getData("active_room", "general"));
+        }
+    }
+}
+
+function formatFileSize(size) {
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let index = 0;
+    while (size >= 1024 && index < units.length - 1) {
+        size /= 1024;
+        index++;
+    }
+    return `${size.toFixed(2)} ${units[index]}`;
+}
+
 // ----------------------------------------
 
 
@@ -462,6 +584,131 @@ function displayMsg(nick, pfp, msg) {
     chatList.appendChild(chatContainer);
 }
 
+function displayMedia(nick, pfp, msg, file) {
+  // Create the main container
+  const chatContainer = document.createElement('div');
+  chatContainer.className = 'chat-container';
+
+  // Create the profile picture
+  const pfpImg = document.createElement('img');
+  pfpImg.className = 'pfp';
+  pfpImg.id = 'pfp';
+  pfpImg.src = pfp;
+  pfpImg.alt = nick;
+
+  // Create the chat content container
+  const chatContent = document.createElement('div');
+  chatContent.className = 'chat-content';
+
+  // Create the username heading
+  const username = document.createElement('h3');
+  username.id = 'username';
+  username.textContent = nick;
+
+  // Create the message paragraph
+  const msgContent = document.createElement('p');
+  msgContent.id = 'msg-content';
+  msgContent.textContent = msg;
+
+  // Create the media container
+  const mediaContainer = document.createElement('div');
+  mediaContainer.className = 'media-container';
+  mediaContainer.id = 'media-container';
+
+  // Determine the file type and create the corresponding media element
+  let mediaElement;
+  if (file.type.startsWith('image')) {
+    mediaElement = document.createElement('img');
+    mediaElement.className = 'file-preview';
+    mediaElement.id = 'file-preview';
+    mediaElement.src = file.data;
+    mediaElement.alt = file.name;
+  } else if (file.type.startsWith('video')) {
+    mediaElement = document.createElement('video');
+    mediaElement.className = 'file-preview';
+    mediaElement.id = 'file-preview';
+    mediaElement.src = file.data;
+    mediaElement.alt = file.name;
+    mediaElement.controls = true;
+  } else if (file.type.startsWith('audio')) {
+    mediaElement = document.createElement('audio');
+    mediaElement.className = 'file-preview';
+    mediaElement.id = 'file-preview';
+    mediaElement.src = file.data;
+    mediaElement.alt = file.name;
+    mediaElement.controls = true;
+  } else {
+    mediaElement = document.createElement('img');
+    mediaElement.className = 'file-preview';
+    mediaElement.id = 'file-preview';
+    const fileExt = file.name.split('.').pop();
+    mediaElement.src = `https://placehold.co/300x300/png?text=${fileExt}&background=cccccc&color=fff&.ext=${fileExt}`;
+  }
+
+  // Create the file header
+  const fileHeader = document.createElement('div');
+  fileHeader.className = 'file-header';
+  fileHeader.id = 'file-header';
+
+  // Create the file name
+  const fileName = document.createElement('div');
+  fileName.className = 'file-name';
+  fileName.id = 'file-name';
+  fileName.textContent = file.name;
+
+  // Create the file download button
+  const fileDownload = document.createElement('div');
+  fileDownload.className = 'file-download';
+  fileDownload.id = 'file-download';
+  fileDownload.title = 'Download';
+  fileDownload.innerHTML = '<i class="fa-solid fa-download"></i>';
+
+  fileDownload.onclick = () => {
+    const base64data = file.data;
+    const arrayBuffer = base64ToArrayBuffer(base64data);
+    const url = window.URL.createObjectURL(new Blob([arrayBuffer]));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Create the file size
+  const fileSize = document.createElement('div');
+  fileSize.className = 'file-size';
+  fileSize.id = 'file-size';
+  fileSize.textContent = `${file.size}`;
+
+  // Assemble the structure
+  fileHeader.appendChild(fileName);
+  fileHeader.appendChild(fileDownload);
+
+  mediaContainer.appendChild(mediaElement);
+  mediaContainer.appendChild(fileHeader);
+  mediaContainer.appendChild(fileSize);
+
+  chatContent.appendChild(username);
+  chatContent.appendChild(msgContent);
+  chatContent.appendChild(mediaContainer);
+
+  chatContainer.appendChild(pfpImg);
+  chatContainer.appendChild(chatContent);
+
+  // Add to chatlist
+  const chatList = document.getElementById('chatlist');
+  chatList.appendChild(chatContainer);
+}
+function base64ToArrayBuffer(base64) {
+  const binaryString = window.atob(base64.split(',')[1]);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
 
 
 

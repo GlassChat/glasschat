@@ -167,6 +167,70 @@ body {
     width: 95%;
     height: auto;
 }
+
+.media-container {
+    width: 50%;
+    height: auto;
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2.5px solid rgba(253, 253, 253, 0.322);
+    border-radius: 10px;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    position: relative;
+}
+.file-header {
+    position: absolute;
+    width: 100%;
+    height: auto;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px;
+}
+.file-name,
+.file-size,
+.file-download {
+    padding: 5px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.file-name {
+    font-size: 1rem;
+    color: var(--c-bg);
+    max-width: 80%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.file-size {
+    font-size: 1rem;
+    color: var(--c-bg);
+    max-width: 20%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: absolute;
+    bottom: 5px;
+    right: 10px;
+}
+.file-download {
+    font-size: 1.5rem;
+    color: var(--c-bg);
+    cursor: pointer;
+}
+
+
+
 #username {
     color: var(--c-accent);
 }
@@ -290,6 +354,14 @@ body {
     font-size: 100%;
 }
 
+#current-user {
+    margin: 2px;
+}
+#current-user:hover, #current-user:focus {
+    background-color: rgba(250, 235, 215, 0.158);
+    cursor: pointer;
+}
+
 .channels.show {
     left: 0;
 }
@@ -312,15 +384,27 @@ body {
     display: block;
 }
 
+
+
 .setup-modal{
     display: none;
+}
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+.close-modal:hover {
+    color: rgba(250, 235, 215, 0.158);
 }
 .setup-modal.show {
     display: block;
 }
 .setup-container {
     position: absolute;
-    width: 30vw;
+    width: 30dvw;
     height: auto;
     background-color: rgba(245, 245, 220, 0.26);
     backdrop-filter: blur(10px);
@@ -364,6 +448,78 @@ body {
 }
 .pfp-box::placeholder {
     color: rgba(245, 245, 245, 0.603)
+}
+
+.attach-media-modal {
+    display: none;
+}
+.attach-media-modal.show {
+    display: block;
+}
+.attach-media-container {
+    position: absolute;
+    width: 30dvw;
+    height: auto;
+    background-color: rgba(245, 245, 220, 0.26);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2.5px solid rgba(253, 253, 253, 0.322);
+    border-radius: 10px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px;
+}
+
+.attach-media-input::file-selector-button {
+    font-size: 1.5rem;
+    color: var(--c-bg);
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    border-radius: 10px;
+}
+.attach-media-input::file-selector-button:hover, .attach-media-input::file-selector-button:focus {
+    background-color: rgba(250, 235, 215, 0.158);
+}
+.attach-media-box {
+    font-size: 1.5rem;
+    color: var(--c-bg);
+    background-color: transparent;
+    border: none;
+    width: 90%;
+    height: 90%;
+}
+.attach-media-box:focus {
+    outline: none;
+}
+.attach-media-box::placeholder {
+    color: rgba(245, 245, 245, 0.603)
+}
+.media-preview {
+    width: 100%;
+    height: auto;
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2.5px solid rgba(253, 253, 253, 0.322);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-preview {
+    width: 50%;
+    height: auto;
+    min-height: 100px;
+    border-radius: 10px;
 }
 
 
@@ -454,13 +610,28 @@ body {
     background-color: var(--c-pink);
 }
 
+.btn#attach-media-send-btn {
+    font-size: 2rem;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--c-bg);
+    border-radius: 10px;
+    border: 2.5px solid rgba(253, 253, 253, 0.322);
+}
+.btn#attach-media-send-btn:hover, .btn#attach-media-send-btn:focus {
+    background-color: var(--c-pink);
+}
 
 
 
 @media screen and (max-width: 768px) {
     /* CSS rules for screens 768px and smaller */
-    .setup-container {
+    .setup-container, .attach-media-container {
         width: 70vw;
+    }
+    .media-container {
+        width: 100%;
     }
 
     /* .container {

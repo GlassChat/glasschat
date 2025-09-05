@@ -1,95 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
     <title>GlassChat</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
       href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap"
       rel="stylesheet"
-    />
+    >
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
+    >
     <link rel="stylesheet" href="static/styles.css">
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
     <script src="static/script.js" defer></script>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container" id="container">
 
-        <div class="chatbox" id="chatbox">
-          <div class="chatlist" id="chatlist">
+      <div class="chatbox" id="chatbox">
 
-<!--             <div class="chat-container">
-              <img class="pfp" id="pfp" src="https://imagedelivery.net/MPdwyYSWT8IY7lxgN3x3Uw/20dfa80f-6db4-4ddc-7331-ed6c55daae00/thumbnail">
-              <div class="chat-content">
-                <h3 id="username">User 1</h3>
-                <p id="msg-content">Hello world</p>
+        <div class="chatlist" id="chatlist">
+
+          <!-- <div class="chat-container">
+            <img class="pfp" id="pfp" src="https://imagedelivery.net/MPdwyYSWT8IY7lxgN3x3Uw/20dfa80f-6db4-4ddc-7331-ed6c55daae00/thumbnail">
+            <div class="chat-content">
+              <h3 id="username">User 1</h3>
+              <p id="msg-content">Hello world</p>
+
+              <div class="media-container" id="media-container">
+
+                <img class="file-preview" id="file-preview" src="https://placehold.co/400x900" alt="File Preview">
+                <div class="file-header" id="file-header">
+                  <div class="file-name" id="file-name">filename.png</div>
+                  <div class="file-download" id="file-download" title="Download"><i class="fa-solid fa-download"></i></div>
+                </div>
+                <div class="file-size" id="file-size">100 KB</div>
               </div>
-            </div> -->
 
-          </div>
-          <div class="footer" id="footer">
-            <div class="typing-indicator" id="typing-indicator"></div>
-            <div class="input-container" id="input-container">
-              <button class="btn" id="settings-btn" onclick="toggleSetupModal()" title="Settings"><i class="fa-solid fa-cog"></i></button>
-              <input class="input-box" id="input-box" type="text" placeholder="Type your message here...">
-              <button class="btn" id="send-msg-btn" onclick="sendMsg()" title="Send Message"><i class="fa-solid fa-arrow-right"></i></button>
             </div>
-          </div>
+          </div> -->
 
         </div>
 
-        <div class="header" id="header">
-          <button class="btn" id="channels-btn" onclick="toggleChannels()" title="Channel List"><i class="fa-solid fa-hashtag"></i></button>
-          <h1 class="branding" id="branding">GlassChat</h1>
-          <button class="btn" id="users-btn" onclick="toggleUsers()" title="Online User List"><i class="fa-solid fa-user"></i></button>
-        </div>
-
-        <div class="channels" id="channels">
-          <h2 class="branding" id="branding">Channels <button class="btn" id="join-channel-btn" onclick="toggleChannels()" title="Add Channel"><i class="fa-solid fa-plus"> </i> </button></h2>
-          <div class="channels-list" id="channels-list">
-            <div class="channel"># general</div>
-          </div>
-          
-        </div>
-
-        <div class="users" id="users">
-          <h2 class="branding" id="branding"><span id="user-count">0</span> - Online Users</h2>
-          <div class="users-list" id="users-list">
-<!--             <div class="user">
-              <img class="pfp" src="https://imagedelivery.net/MPdwyYSWT8IY7lxgN3x3Uw/20dfa80f-6db4-4ddc-7331-ed6c55daae00/thumbnail">
-              <span class="username">User 1</span>
-            </div> -->
-
+        <div class="footer" id="footer">
+          <div class="typing-indicator" id="typing-indicator"></div>
+          <div class="input-container" id="input-container">
+            <button class="btn" id="settings-btn" onclick="toggleAttachMediaModal()" title="Attach Media"><i class="fa-solid fa-plus"></i></button>
+            <input class="input-box" id="input-box" type="text" placeholder="Type your message here...">
+            <button class="btn" id="send-msg-btn" onclick="sendMsg()" title="Send Message"><i class="fa-solid fa-arrow-right"></i></button>
           </div>
         </div>
 
-    <div class="blur" id="blur"></div>
-    <!-- MODALS -->
-     <div class="setup-modal" id="setup-modal">
+      </div>
+
+      <div class="header" id="header">
+        <button class="btn" id="channels-btn" onclick="toggleChannels()" title="Channel List"><i class="fa-solid fa-hashtag"></i></button>
+        <h1 class="branding" id="branding">GlassChat</h1>
+        <button class="btn" id="users-btn" onclick="toggleUsers()" title="Online User List"><i class="fa-solid fa-user"></i></button>
+      </div>
+
+      <div class="channels" id="channels">
+        <h2 class="branding" id="branding">Channels <button class="btn" id="join-channel-btn" onclick="toggleChannels()" title="Add Channel"><i class="fa-solid fa-plus"></i></button></h2>
+        <div class="channels-list" id="channels-list">
+          <div class="channel"># general</div>
+        </div>
+      </div>
+
+      <div class="users" id="users">
+        <div class="user" id="current-user" onclick="toggleSetupModal()" title="Edit Profile">
+          <img class="pfp" id="current-pfp" src="https://imagedelivery.net/MPdwyYSWT8IY7lxgN3x3Uw/20dfa80f-6db4-4ddc-7331-ed6c55daae00/thumbnail">
+          <span class="username" id="current-username">User 1</span>
+        </div>
+        <h2 class="branding" id="branding"><span id="user-count">0</span> - Online Users</h2>
+        <div class="users-list" id="users-list">
+          <!-- <div class="user">
+            <img class="pfp" src="https://imagedelivery.net/MPdwyYSWT8IY7lxgN3x3Uw/20dfa80f-6db4-4ddc-7331-ed6c55daae00/thumbnail">
+            <span class="username">User 1</span>
+          </div> -->
+        </div>
+      </div>
+
+      <div class="blur" id="blur"></div>
+
+      <!-- MODALS -->
+      <div class="setup-modal" id="setup-modal">
+
         <div class="setup-container" id="setup-container">
+
+          <div class="close-modal" onclick="toggleSetupModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </div>
+
           <div class="profile-container">
             <img class="pfp" id="setup-pfp" style="width: 60px;" src="">
             <div class="chat-content">
               <h2 id="setup-username"></h2>
             </div>
           </div>
+
+
           <input class="nick-box" id="nick-box" type="text" placeholder="Username*" required="true" aria-required="true">
           <input class="pfp-box" id="pfp-box" type="url" placeholder="pfp url">
           <button class="btn" id="join-btn" onclick="setupForm()" title="Join GlassChat">Join <i class="fa-solid fa-arrow-right"></i></button>
         </div>
+
       </div>
 
-    </div>
-</body>
-</html>
+      <div class="attach-media-modal" id="attach-media-modal">
 
+        <div class="attach-media-container" id="attach-media-container">
+
+          <div class="close-modal" onclick="toggleAttachMediaModal()">
+            <i class="fa-solid fa-xmark"></i>
+          </div>
+
+          
+
+          <h2 class="branding" id="branding">Attach Media - 50MB Limit (tentative)</h2>
+
+          <div class="media-preview" id="media-preview">
+            
+          </div>
+
+          <input type="file" class="attach-media-input" id="attach-media-input" accept="*/*">
+          <input class="attach-media-box" id="attach-media-box" type="text" placeholder="Message (optional)">
+          <button class="btn" id="attach-media-send-btn" onclick="sendMedia()" title="Send Attachment">Send <i class="fa-solid fa-arrow-right"></i></button>
+
+        </div>
+
+      </div>
+      <!-- ---------------------------------------------------------------- -->
+
+    </div>
+  </body>
+</html>
 

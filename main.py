@@ -13,7 +13,9 @@ socketio = SocketIO(
     cors_allowed_origins="*",
     async_mode='threading',
     ping_timeout=60,
-    ping_interval=25
+    ping_interval=25,
+    max_content_length=50 * 1024 * 1024,
+    max_http_buffer_size=50 * 1024 * 1024
 )
 
 users_by_sid = {}
@@ -95,6 +97,24 @@ def msg(data):
     if not t: 
         return
     emit("msg", {"nick": data.get("nick"), "pfp": data.get("pfp"), "msg": t, "room": data.get("room")}, broadcast=True)
+
+@socketio.on("media")
+def media(data):
+    user = users_by_sid.get(request.sid)
+    if not user: 
+        return
+    file_data = data.get("file")
+    if not file_data:
+        return
+
+    emit("media", {
+        "nick": data.get("nick"), 
+        "pfp": data.get("pfp"), 
+        "msg": data.get("txt", "").strip(), 
+        "file": file_data, 
+        "room": data.get("room"),
+        "type": data.get("type", "other")
+    }, broadcast=True)
 
 @socketio.on("typing")
 def typing():
