@@ -55,37 +55,44 @@ def join(data):
         prev_room = prev["room"]
         leave_room(prev_room)
         room_members[prev_room] = [user for user in room_members[prev_room] if user["nick"] != prev["nick"]]
-        emit("left", {"nick": prev["nick"]}, room=prev_room, include_self=False, broadcast=True)
+        emit("left", {"nick": prev["nick"]}, room=prev_room, include_self=False)
         update_presence(prev_room)
     
     nick = get_unique_nick(nick, room)
     join_room(room)
-    users_by_sid[request.sid] = {"nick": nick, "room": room}
+    users_by_sid[request.sid] = {"nick": nick, "room": room, "pfp": pfp}  # Store pfp in users_by_sid
     room_members[room].append({"nick": nick, "pfp": pfp})
-    emit("joined", {"nick": nick, "room": room, "pfp": pfp}, broadcast=True)
+    
+    # Only broadcast join event to the room being joined
+    emit("joined", {"nick": nick, "room": room, "pfp": pfp}, room=room)
     emit("joined-2", {"nick": nick, "room": room, "pfp": pfp}, broadcast=False)
     update_presence(room)
 
 @socketio.on("switch")
 def switch(data):
-    nick = users_by_sid.get(request.sid, {}).get("nick")
-    if not nick:
+    user = users_by_sid.get(request.sid)
+    if not user:
         return
+    
+    nick = user["nick"]
     new_room = (data.get("room") or "general").strip()
-    cur_room = users_by_sid[request.sid]["room"]
+    cur_room = user["room"]
     if new_room == cur_room:
         return
     
     leave_room(cur_room)
-    room_members[cur_room] = [user for user in room_members[cur_room] if user["nick"] != nick]
-    emit("left", {"nick": nick}, room=cur_room, include_self=False, broadcast=True)
+    room_members[cur_room] = [u for u in room_members[cur_room] if u["nick"] != nick]
+    emit("left", {"nick": nick}, room=cur_room, include_self=False)
     update_presence(cur_room)
     
     join_room(new_room)
-    users_by_sid[request.sid]["room"] = new_room
-    user_pfp = next((u["pfp"] for u in room_members[cur_room] if u["nick"] == nick), "https://raw.githubusercontent.com/iFreaku/keepbooks/refs/heads/main/static/avatar/1.png")
-    room_members[new_room].append({"nick": nick, "pfp": user_pfp})
-    emit("joined", {"nick": nick, "room": new_room}, broadcast=True)
+    user["room"] = new_room
+    room_members[new_room].append({"nick": nick, "pfp": user["pfp"]})
+    
+    # Only broadcast join event to the room being joined
+    emit("joined", {"nick": nick, "room": new_room, "pfp": user["pfp"]}, room=new_room)
+    # Send room switch confirmation to the user
+    emit("room_switched", {"room": new_room}, broadcast=False)
     update_presence(new_room)
 
 @socketio.on("msg")
@@ -96,7 +103,8 @@ def msg(data):
     t = (data.get("txt") or "").strip()
     if not t: 
         return
-    emit("msg", {"nick": data.get("nick"), "pfp": data.get("pfp"), "msg": t, "room": data.get("room")}, broadcast=True)
+    room = data.get("room") or user["room"]
+    emit("msg", {"nick": data.get("nick"), "pfp": data.get("pfp"), "msg": t, "room": room}, room=room)
 
 @socketio.on("media")
 def media(data):
@@ -107,14 +115,15 @@ def media(data):
     if not file_data:
         return
 
+    room = data.get("room") or user["room"]
     emit("media", {
         "nick": data.get("nick"), 
         "pfp": data.get("pfp"), 
         "msg": data.get("txt", "").strip(), 
         "file": file_data, 
-        "room": data.get("room"),
+        "room": room,
         "type": data.get("type", "other")
-    }, broadcast=True)
+    }, room=room)
 
 @socketio.on("typing")
 def typing():
@@ -132,9 +141,10 @@ def styping():
 def disc():
     user = users_by_sid.pop(request.sid, None)
     if user:
-        room_members[user["room"]] = [u for u in room_members[user["room"]] if u["nick"] != user["nick"]]
-        emit("left", {"nick": user["nick"]}, room=user["room"], include_self=False, broadcast=True)
-        update_presence(user["room"])
+        room = user["room"]
+        room_members[room] = [u for u in room_members[room] if u["nick"] != user["nick"]]
+        emit("left", {"nick": user["nick"]}, room=room, include_self=False)
+        update_presence(room)
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
